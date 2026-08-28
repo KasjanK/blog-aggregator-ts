@@ -1,27 +1,48 @@
 import { setUser } from "./config";
+import { createUser, getUserByName } from "./lib/db/queries/users";
 
-export type CommandHandler = (cmdName: string, ...args: string[]) => void;
+export type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 
 export type CommandsRegistry = Record<string, CommandHandler>;
 
-export function handlerLogin(cmdName: string, ...args: string[]) {
+export async function handlerLogin(cmdName: string, ...args: string[]) {
     if (args.length === 0) {
-        console.log("please provide a username")
-        process.exit(1);
+        throw new Error("please provide a username")
     }
+
     const username = args[0];
-    setUser(username);
+    const user = await getUserByName(username);
+    if (!user) {
+        throw new Error("user doesnt exist");
+    }
+
+    setUser(user.name);
     console.log(`Username "${username}" has been set!`);
 }
 
-export function registerCommand(registry: CommandsRegistry, cmdName: string, handler: CommandHandler) {
+export async function handlerRegister(cmdName: string, ...args: string[]) {
+    if (args.length === 0) {
+        throw new Error("please provide a username to register");
+    }
+
+    const username = args[0];
+    const user = await createUser(username);
+    if (!user) {
+        throw new Error("user already exists")
+    }
+
+    setUser(user.name);
+    console.log(`User "${user.name}" has been registered!`);
+}
+
+export async function registerCommand(registry: CommandsRegistry, cmdName: string, handler: CommandHandler) {
     registry[cmdName] = handler;
 }
 
-export function runCommand(registry: CommandsRegistry, cmdName: string, ...args: string[]) {
+export async function runCommand(registry: CommandsRegistry, cmdName: string, ...args: string[]) {
     const handler = registry[cmdName];
     if (!handler) {
         throw new Error(`Unknown command: ${cmdName}`);
     }
-    handler(cmdName, ...args);
+    await handler(cmdName, ...args);
 }
