@@ -1,5 +1,5 @@
-import { setUser } from "./config";
-import { createUser, getUserByName, reset } from "./lib/db/queries/users";
+import { readConfig, setUser } from "./config";
+import { createUser, getAllUsers, getUserByName, reset } from "./lib/db/queries/users";
 
 export type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 
@@ -39,6 +39,20 @@ export async function handlerReset(cmdName: string, ...args: string[]) {
     await reset();
     console.log("table users reset successfully");
     process.exit(0);
+}
+
+export async function handlerListUsers(cmdName: string, ...args: string[]) {
+    const users = await getAllUsers();
+    if (users.length === 0) {
+        console.log("no users available");
+    }
+    for (const user of users) {
+        if (readConfig().currentUserName === user.name) {
+            console.log(`* ${user.name} (current)`);
+            continue
+        }
+        console.log(`* ${user.name}`);
+    }
 }
 
 export async function registerCommand(registry: CommandsRegistry, cmdName: string, handler: CommandHandler) {
