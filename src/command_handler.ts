@@ -1,5 +1,6 @@
 import { readConfig, setUser } from "./config";
 import { createUser, getAllUsers, getUserByName, reset } from "./lib/db/queries/users";
+import { fetchFeed } from "./rss";
 
 export type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 
@@ -39,6 +40,12 @@ export async function handlerReset(cmdName: string, ...args: string[]) {
     await reset();
     console.log("table users reset successfully");
     process.exit(0);
+}
+
+export async function handlerAgg(cmdName: string, ...args: string[]) {
+    const feed = await fetchFeed("https://www.wagslane.dev/index.xml")
+    const feedStr = JSON.stringify(feed, null, 2);
+    console.log(feedStr)
 }
 
 export async function handlerListUsers(cmdName: string, ...args: string[]) {
