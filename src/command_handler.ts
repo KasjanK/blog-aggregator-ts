@@ -1,10 +1,15 @@
 import { readConfig, setUser } from "./config";
+import { createFeed } from "./lib/db/queries/feeds";
 import { createUser, getAllUsers, getUserByName, reset } from "./lib/db/queries/users";
+import { feeds, users } from "./lib/db/schema";
 import { fetchFeed } from "./rss";
 
 export type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 
 export type CommandsRegistry = Record<string, CommandHandler>;
+
+export type Feed = typeof feeds.$inferSelect;
+export type User = typeof users.$inferSelect;
 
 export async function handlerLogin(cmdName: string, ...args: string[]) {
     if (args.length === 0) {
@@ -60,6 +65,37 @@ export async function handlerListUsers(cmdName: string, ...args: string[]) {
         }
         console.log(`* ${user.name}`);
     }
+}
+
+export async function handlerAddfeed(cmdName: string, ...args: string[]) {
+    if (args.length < 2) {
+        throw new Error("you need to provide a feed name and url")
+    }
+
+    const config = readConfig()
+    const user = await getUserByName(config.currentUserName);
+    if (!user) {
+        throw new Error(`User ${config.currentUserName} not found`);
+    }
+
+    const feedName = args[0];
+    const feedUrl = args[1];
+
+    const feed = await createFeed(feedUrl, feedName, user.id);
+    if (!feed) {
+        throw new Error(`Failed to create feed`);
+    }
+
+    printFeed(user, feed);
+}
+
+export async function printFeed(user: User, feed: Feed) {
+    console.log(`* ID:            ${feed.id}`);
+    console.log(`* Created:       ${feed.createdAt}`);
+    console.log(`* Updated:       ${feed.updatedAt}`);
+    console.log(`* name:          ${feed.name}`);
+    console.log(`* URL:           ${feed.url}`);
+    console.log(`* User:          ${user.name}`);
 }
 
 export async function registerCommand(registry: CommandsRegistry, cmdName: string, handler: CommandHandler) {
