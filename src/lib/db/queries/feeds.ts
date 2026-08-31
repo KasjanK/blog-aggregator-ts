@@ -1,5 +1,5 @@
 import { db } from "..";
-import { feeds, users } from "../schema";
+import { feeds } from "../schema";
 
 export async function createFeed(url: string, name: string, userId: string) {
     const [result] = await db.insert(feeds).values({ name: name, url: url, userId: userId}).returning();
@@ -7,3 +7,7 @@ export async function createFeed(url: string, name: string, userId: string) {
     return result;
 }
 
+export async function listAllFeeds() {
+    const result = await db.select().from(feeds);
+    return result;
+}
