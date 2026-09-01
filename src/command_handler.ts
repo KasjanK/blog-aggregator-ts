@@ -1,5 +1,5 @@
 import { readConfig, setUser } from "./config";
-import { createFeed, listAllFeeds } from "./lib/db/queries/feeds";
+import { createFeed, createFeedFollow, getFeedByURL, getFeedFollowsForUser, listAllFeeds } from "./lib/db/queries/feeds";
 import { createUser, getAllUsers, getUserByID, getUserByName, reset } from "./lib/db/queries/users";
 import { feeds, users } from "./lib/db/schema";
 import { fetchFeed } from "./rss";
@@ -86,6 +86,9 @@ export async function handlerAddfeed(cmdName: string, ...args: string[]) {
         throw new Error(`Failed to create feed`);
     }
 
+    const feedFollow = await createFeedFollow(feed.id, user.id)
+    printFeedFollow(user.name, feedFollow.feedName);
+
     printFeed(user, feed);
 }
 
@@ -99,6 +102,42 @@ export async function handlerListFeeds(cmdName: string, ...args: string[]) {
     }
 }
 
+export async function handlerFollow(cmdName: string, ...args: string[]) { 
+    if (args.length !== 1) {
+        throw new Error("you need to provide a url");
+    }
+
+    const user = await getUserByName(readConfig().currentUserName);
+    if (!user) {
+        throw new Error("user not found");
+    }
+
+    const url = args[0];
+    const feed = await getFeedByURL(url);
+    if (!feed) {
+        throw new Error(`feed not found: ${url}`);
+    }
+
+    const feedFollow = await createFeedFollow(feed.id, user.id)
+    printFeedFollow(feedFollow.userName, feedFollow.feedName)
+}
+
+export async function handlerFollowing(cmdName: string, ...args: string[]) {
+    const user = await getUserByName(readConfig().currentUserName);
+    if (!user) {
+        throw new Error("user not found");
+    }
+
+    const feedFollows = await getFeedFollowsForUser(user.id)
+    if (feedFollows.length === 0) {
+        console.log("no feed follows found for this user")
+    }
+
+    for (const follow of feedFollows) {
+        console.log(`* ${follow.feedName}`);
+    }
+}
+
 export async function printFeed(user: User, feed: Feed) {
     console.log(`* ID:            ${feed.id}`);
     console.log(`* Created:       ${feed.createdAt}`);
@@ -107,6 +146,12 @@ export async function printFeed(user: User, feed: Feed) {
     console.log(`* URL:           ${feed.url}`);
     console.log(`* User:          ${user.name}`);
 }
+
+export function printFeedFollow(username: string, feedname: string) {
+  console.log(`* User:          ${username}`);
+  console.log(`* Feed:          ${feedname}`);
+}
+
 
 export async function registerCommand(registry: CommandsRegistry, cmdName: string, handler: CommandHandler) {
     registry[cmdName] = handler;

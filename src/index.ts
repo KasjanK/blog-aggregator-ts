@@ -1,4 +1,4 @@
-import { CommandsRegistry, handlerAddfeed, handlerAgg, handlerListFeeds, handlerListUsers, handlerLogin, handlerRegister, handlerReset, registerCommand, runCommand } from "./command_handler";
+import { CommandsRegistry, handlerAddfeed, handlerAgg, handlerFollow, handlerFollowing, handlerListFeeds, handlerListUsers, handlerLogin, handlerRegister, handlerReset, registerCommand, runCommand } from "./command_handler";
 
 async function main() {
     const commandRegistry: CommandsRegistry = {}
@@ -9,6 +9,8 @@ async function main() {
     registerCommand(commandRegistry, "agg", handlerAgg)
     registerCommand(commandRegistry, "addfeed", handlerAddfeed)
     registerCommand(commandRegistry, "feeds", handlerListFeeds)
+    registerCommand(commandRegistry, "follow", handlerFollow)
+    registerCommand(commandRegistry, "following", handlerFollowing)
 
     const args = process.argv.slice(2);
     if (args.length === 0) {
