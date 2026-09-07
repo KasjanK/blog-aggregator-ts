@@ -1,5 +1,5 @@
 import { readConfig, setUser } from "./config";
-import { createFeed, createFeedFollow, getFeedByURL, getFeedFollowsForUser, listAllFeeds } from "./lib/db/queries/feeds";
+import { createFeed, createFeedFollow, deleteFeedFollow, getFeedByURL, getFeedFollowsForUser, listAllFeeds } from "./lib/db/queries/feeds";
 import { createUser, getAllUsers, getUserByID, getUserByName, reset } from "./lib/db/queries/users";
 import { feeds, users } from "./lib/db/schema";
 import { fetchFeed } from "./rss";
@@ -126,6 +126,15 @@ export async function handlerFollowing(cmdName: string, user: User, ...args: str
     for (const follow of feedFollows) {
         console.log(`* ${follow.feedName}`);
     }
+}
+
+export async function handlerUnfollow(cmdName: string, user: User, ...args: string[]) {
+    const feed = await getFeedByURL(args[0]);    
+    if (!feed) {
+        throw new Error("could not find feed");
+    }
+
+    await deleteFeedFollow(user.id, feed.id)
 }
 
 export async function printFeed(user: User, feed: Feed) {
