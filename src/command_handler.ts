@@ -11,6 +11,12 @@ export type CommandsRegistry = Record<string, CommandHandler>;
 export type Feed = typeof feeds.$inferSelect;
 export type User = typeof users.$inferSelect;
 
+export type UserCommandHandler = (
+    cmdName: string,
+    user: User,
+    ...args: string[]
+) => Promise<void> | void;
+
 export async function handlerLogin(cmdName: string, ...args: string[]) {
     if (args.length === 0) {
         throw new Error("please provide a username")
@@ -67,15 +73,9 @@ export async function handlerListUsers(cmdName: string, ...args: string[]) {
     }
 }
 
-export async function handlerAddfeed(cmdName: string, ...args: string[]) {
+export async function handlerAddfeed(cmdName: string, user: User, ...args: string[]) {
     if (args.length < 2) {
         throw new Error("you need to provide a feed name and url")
-    }
-
-    const config = readConfig()
-    const user = await getUserByName(config.currentUserName);
-    if (!user) {
-        throw new Error(`User ${config.currentUserName} not found`);
     }
 
     const feedName = args[0];
@@ -102,14 +102,9 @@ export async function handlerListFeeds(cmdName: string, ...args: string[]) {
     }
 }
 
-export async function handlerFollow(cmdName: string, ...args: string[]) { 
+export async function handlerFollow(cmdName: string, user: User, ...args: string[]) { 
     if (args.length !== 1) {
         throw new Error("you need to provide a url");
-    }
-
-    const user = await getUserByName(readConfig().currentUserName);
-    if (!user) {
-        throw new Error("user not found");
     }
 
     const url = args[0];
@@ -122,12 +117,7 @@ export async function handlerFollow(cmdName: string, ...args: string[]) {
     printFeedFollow(feedFollow.userName, feedFollow.feedName)
 }
 
-export async function handlerFollowing(cmdName: string, ...args: string[]) {
-    const user = await getUserByName(readConfig().currentUserName);
-    if (!user) {
-        throw new Error("user not found");
-    }
-
+export async function handlerFollowing(cmdName: string, user: User, ...args: string[]) {
     const feedFollows = await getFeedFollowsForUser(user.id)
     if (feedFollows.length === 0) {
         console.log("no feed follows found for this user")
