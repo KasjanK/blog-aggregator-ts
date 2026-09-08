@@ -22,6 +22,20 @@
       "when": 1788878988541,
       "tag": "0002_melodic_zarek",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788884648629,
+      "tag": "0003_smooth_thunderbolts",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788885232086,
+      "tag": "0004_loving_triathlon",
+      "breakpoints": true
     }
   ]
 }

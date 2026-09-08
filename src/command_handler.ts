@@ -1,7 +1,8 @@
 import { readConfig, setUser } from "./config";
 import { createFeed, createFeedFollow, deleteFeedFollow, getFeedByURL, getFeedFollowsForUser, getNextFeedToFetch, listAllFeeds, markFeedFetched } from "./lib/db/queries/feeds";
+import { createPost, getPostsForUsers } from "./lib/db/queries/posts";
 import { createUser, getAllUsers, getUserByID, getUserByName, reset } from "./lib/db/queries/users";
-import { feeds, users } from "./lib/db/schema";
+import { feeds, NewPost, users } from "./lib/db/schema";
 import { fetchFeed } from "./rss";
 
 export type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
@@ -171,6 +172,34 @@ export async function handlerUnfollow(cmdName: string, user: User, ...args: stri
     await deleteFeedFollow(user.id, feed.id)
 }
 
+export async function handlerBrowse(
+    cmdName: string,
+    user: User,
+    ...args: string[]
+) {
+    let limit = 2;
+    if (args.length === 1) {
+        let specifiedLimit = parseInt(args[0]);
+        if (specifiedLimit) {
+            limit = specifiedLimit;
+        } else {
+            throw new Error(`usage: ${cmdName} [limit]`);
+        }
+    }
+
+    const posts = await getPostsForUsers(user.id, limit);
+
+    console.log(`Found ${posts.length} posts for user ${user.name}`);
+    for (let post of posts) {
+        console.log(`${post.publishedAt} from ${post.feedName}`);
+        console.log(`--- ${post.title} ---`);
+        console.log(`    ${post.description}`);
+        console.log(`Link: ${post.url}`);
+        console.log(`=====================================`);
+    }
+}
+
+
 export async function printFeed(user: User, feed: Feed) {
     console.log(`* ID:            ${feed.id}`);
     console.log(`* Created:       ${feed.createdAt}`);
@@ -203,17 +232,35 @@ export async function scrapeFeeds() {
     if (!feedToFetch) {
         throw new Error("no feeds to fetch");
     }
+    await scrapeFeed(feedToFetch);
 
-    const feed = await fetchFeed(feedToFetch.url)
-    markFeedFetched(feedToFetch.id)
+}
+export async function scrapeFeed(feed: Feed) {
+    const feedData = await fetchFeed(feed.url)
+    markFeedFetched(feed.id)
 
-    for (const item of feed.channel.item) {
-        console.log(item.title)
+    for (const item of feedData.channel.item) {
+        console.log(`Found post: %s`, item.title);
+
+        const now = new Date();
+
+        await createPost({
+            url: item.link,
+            feedId: feed.id,
+            title: item.title,
+            createdAt: now,
+            updatedAt: now,
+            description: item.description,
+            publishedAt: new Date(item.pubDate),
+        } satisfies NewPost);
     }
+    console.log(
+        `Feed ${feed.name} collected, ${feedData.channel.item.length} posts found`,
+    );
 }
 
 function handleError(err: unknown) {
-  console.error(
-    `Error scraping feeds: ${err instanceof Error ? err.message : err}`,
-  );
+    console.error(
+        `Error scraping feeds: ${err instanceof Error ? err.message : err}`,
+    );
 }
